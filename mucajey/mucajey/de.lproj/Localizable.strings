@@ -1,0 +1,82 @@
+/* 
+  Localizable.strings (German)
+  TuneQuest
+*/
+
+// Start Screen
+"start.title" = "MuCaJey";
+"start.subtitle" = "Spiele Hitster mit AppleMusic!";
+"start.moreHitster" = "mehr HITSTER";
+"start.instructions" = "Spielregeln";
+"start.or" = "ODER";
+"start.startGame" = "Spiel starten";
+
+// Navigation
+"nav.help" = "Hilfe";
+"nav.info" = "synchronisierte Daten";
+"nav.settings" = "Einstellungen";
+"nav.back" = "Zurück";
+
+// Game
+"game.title" = "TuneQuest";
+"game.scan" = "Karte scannen";
+"game.year" = "Jahr";
+"game.artist" = "Künstler";
+"game.song" = "Titel";
+
+// Buttons
+"button.ok" = "OK";
+"button.cancel" = "Abbrechen";
+"button.save" = "Speichern";
+"button.delete" = "Löschen";
+"button.edit" = "Bearbeiten";
+"button.close" = "Schließen";
+
+// Alerts
+"alert.error" = "Fehler";
+"alert.success" = "Erfolg";
+"alert.warning" = "Warnung";
+"alert.info" = "Information";
+
+// Messages
+"message.loading" = "Lädt...";
+"message.noData" = "Keine Daten verfügbar";
+"message.networkError" = "Netzwerkfehler. Bitte versuchen Sie es erneut.";
+"message.noInternet" = "Keine Internetverbindung";
+"message.timeout" = "Zeitüberschreitung";
+
+// Errors
+"error.invalidURL" = "Ungültige Server-URL";
+"error.serverError" = "Server-Fehler";
+"error.decodingError" = "Fehler beim Verarbeiten der Daten";
+
+// API Key Errors
+"error.apiKey.invalidURL" = "Ungültige Server-URL";
+"error.apiKey.invalidResponse" = "Ungültige Server-Antwort";
+"error.apiKey.serverError" = "Server-Fehler (Code: %d)";
+"error.apiKey.keychainError" = "Fehler beim Speichern des API-Keys";
+"error.apiKey.noAPIKey" = "Kein API-Key vorhanden";
+
+// Player
+"player.openAppleMusic" = "In Apple Music öffnen";
+"player.openSpotify" = "In Spotify öffnen";
+"player.authRequired" = "Apple Music Zugriff benötigt";
+"player.songNotFound" = "Song nicht gefunden";
+"player.loadError" = "Fehler beim Laden";
+"player.playbackError" = "Wiedergabefehler";
+"player.spotifyRequired" = "Spotify-Wiedergabe erfordert die Spotify App";
+
+// Scanner
+"scanner.instruction" = "Richte die Kamera auf den QR-Code der Hitster-Karte";
+"scanner.scanning" = "Scanne...";
+"scanner.flashlightOn" = "Taschenlampe an";
+"scanner.flashlightOff" = "Taschenlampe aus";
+"scanner.invalidQR" = "Ungültiger QR-Code";
+"scanner.invalidFormat" = "Ungültiges URL-Format";
+"scanner.cardNotFound" = "Karte nicht in der Datenbank gefunden";
+"scanner.searchError" = "Fehler bei der Suche";
+"scanner.permissionDenied" = "Kamera-Zugriff verweigert. Bitte in den Einstellungen erlauben.";
+"scanner.unknownError" = "Unbekannter Fehler";
+"scanner.cameraError" = "Kamera konnte nicht geöffnet werden";
+"scanner.inputError" = "Kamera-Eingabe konnte nicht hinzugefügt werden";
+"scanner.outputError" = "Kamera-Ausgabe konnte nicht hinzugefügt werden";

@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 import WebKit
 
-struct StartScreenView: View {
+struct MainView: View {
     @Environment(\.modelContext) private var modelContext
     @Namespace private var transition
     @State private var syncService: DataSyncService?
