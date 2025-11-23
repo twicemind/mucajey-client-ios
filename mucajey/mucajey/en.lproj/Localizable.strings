@@ -1,0 +1,82 @@
+/* 
+  Localizable.strings (English)
+  TuneQuest
+*/
+
+// Start Screen
+"start.title" = "CardJockey";
+"start.subtitle" = "Play Hitster with AppleMusic!";
+"start.moreHitster" = "more HITSTER";
+"start.instructions" = "Game Rules";
+"start.or" = "OR";
+"start.startGame" = "Start Game";
+
+// Navigation
+"nav.help" = "Help";
+"nav.info" = "Synced Data";
+"nav.settings" = "Settings";
+"nav.back" = "Back";
+
+// Game
+"game.title" = "TuneQuest";
+"game.scan" = "Scan Card";
+"game.year" = "Year";
+"game.artist" = "Artist";
+"game.song" = "Title";
+
+// Buttons
+"button.ok" = "OK";
+"button.cancel" = "Cancel";
+"button.save" = "Save";
+"button.delete" = "Delete";
+"button.edit" = "Edit";
+"button.close" = "Close";
+
+// Alerts
+"alert.error" = "Error";
+"alert.success" = "Success";
+"alert.warning" = "Warning";
+"alert.info" = "Information";
+
+// Messages
+"message.loading" = "Loading...";
+"message.noData" = "No data available";
+"message.networkError" = "Network error. Please try again.";
+"message.noInternet" = "No internet connection";
+"message.timeout" = "Request timeout";
+
+// Errors
+"error.invalidURL" = "Invalid server URL";
+"error.serverError" = "Server error";
+"error.decodingError" = "Error processing data";
+
+// API Key Errors
+"error.apiKey.invalidURL" = "Invalid server URL";
+"error.apiKey.invalidResponse" = "Invalid server response";
+"error.apiKey.serverError" = "Server error (Code: %d)";
+"error.apiKey.keychainError" = "Error saving API key";
+"error.apiKey.noAPIKey" = "No API key available";
+
+// Player
+"player.openAppleMusic" = "Open in Apple Music";
+"player.openSpotify" = "Open in Spotify";
+"player.authRequired" = "Apple Music access required";
+"player.songNotFound" = "Song not found";
+"player.loadError" = "Error loading";
+"player.playbackError" = "Playback error";
+"player.spotifyRequired" = "Spotify playback requires the Spotify app";
+
+// Scanner
+"scanner.instruction" = "Point the camera at the QR code on the Hitster card";
+"scanner.scanning" = "Scanning...";
+"scanner.flashlightOn" = "Flashlight on";
+"scanner.flashlightOff" = "Flashlight off";
+"scanner.invalidQR" = "Invalid QR code";
+"scanner.invalidFormat" = "Invalid URL format";
+"scanner.cardNotFound" = "Card not found in database";
+"scanner.searchError" = "Search error";
+"scanner.permissionDenied" = "Camera access denied. Please enable in Settings.";
+"scanner.unknownError" = "Unknown error";
+"scanner.cameraError" = "Camera could not be opened";
+"scanner.inputError" = "Camera input could not be added";
+"scanner.outputError" = "Camera output could not be added";
