@@ -8,7 +8,7 @@ class DataSyncService: ObservableObject {
     @Published var syncError: String?
     @Published var hasData = false
     
-    private let baseURL = "https://tunequest.twicemind.com"
+    private let baseURL = "https://api.mucajey.twicemind.com"
     private let modelContext: ModelContext
     
     init(modelContext: ModelContext) {

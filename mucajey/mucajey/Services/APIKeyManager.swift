@@ -4,9 +4,9 @@ import UIKit
 class APIKeyManager {
     static let shared = APIKeyManager()
     
-    private let keychainKey = "TuneQuestAPIKey"
-    private let deviceIdKey = "TuneQuestDeviceId"
-    private let baseURL = "http://localhost:3000"
+    private let keychainKey = "mucajeyAPIKey"
+    private let deviceIdKey = "mucajeyDeviceId"
+    private let baseURL = "https://api.mucajey.twicemind.com"
     
     private init() {}
     

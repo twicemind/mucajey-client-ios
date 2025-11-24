@@ -135,5 +135,5 @@ struct MainView: View {
 }
 
 #Preview {
-    StartScreenView()
+    MainView()
 }
