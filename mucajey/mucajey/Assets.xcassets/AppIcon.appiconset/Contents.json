@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "tunequest-iOS-Default-1024x1024@1x.png",
+      "filename" : "C59F6F0E-2E89-4B02-B1A7-69C27EAE9124.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "tunequest-iOS-Dark-1024x1024@1x.png",
+      "filename" : "C59F6F0E-2E89-4B02-B1A7-69C27EAE9124 1.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -25,7 +25,7 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "tunequest-iOS-TintedLight-1024x1024@1x.png",
+      "filename" : "C59F6F0E-2E89-4B02-B1A7-69C27EAE9124 2.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
