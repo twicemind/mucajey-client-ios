@@ -1,8 +1,33 @@
+//
+//  DataSync.swift
+//  mucajey
+//
+//  Created by Thomas Herfort on 24.11.25.
+//
+
 import Foundation
 import SwiftData
-internal import Combine
+import Combine
 
-class DataSyncService: ObservableObject {
+enum SyncError: LocalizedError {
+    case invalidURL
+    case serverError
+    case decodingError
+    
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return NSLocalizedString("error.invalidURL", value: "Ungültige Server-URL", comment: "")
+        case .serverError:
+            return NSLocalizedString("error.serverError", value: "Server-Fehler", comment: "")
+        case .decodingError:
+            return NSLocalizedString("error.decodingError", value: "Fehler beim Verarbeiten der Daten", comment: "")
+        }
+    }
+}
+
+@MainActor
+class DataSync: ObservableObject {
     @Published var isSyncing = false
     @Published var lastSyncDate: Date?
     @Published var syncError: String?
@@ -35,7 +60,7 @@ class DataSyncService: ObservableObject {
     }
     
     // Synchronisiere Daten vom Server
-    func syncData() async {
+    func syncData() async throws{
         await MainActor.run {
             guard !isSyncing else { return }
             isSyncing = true
@@ -48,7 +73,7 @@ class DataSyncService: ObservableObject {
             let apiKey = try await APIKeyManager.shared.registerAndGetAPIKey()
             
             // Daten vom Server abrufen
-            guard let url = URL(string: "\(baseURL)/api/all-data") else {
+            guard let url = URL(string: "\(baseURL)/api/files/all-data") else {
                 throw SyncError.invalidURL
             }
             
@@ -62,6 +87,12 @@ class DataSyncService: ObservableObject {
             
             let (data, response) = try await URLSession.shared.data(for: request)
             
+            // Response diagnostics
+            if let http = response as? HTTPURLResponse {
+                let contentType = http.value(forHTTPHeaderField: "Content-Type") ?? "<none>"
+                print("📥 Response: status=\(http.statusCode), content-type=\(contentType), bytes=\(data.count)")
+            }
+            
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw SyncError.serverError
             }
@@ -69,8 +100,10 @@ class DataSyncService: ObservableObject {
             // Debug-Output für Fehlersuche
             if httpResponse.statusCode != 200 {
                 print("❌ Server Error: HTTP \(httpResponse.statusCode)")
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("Response: \(responseString)")
+                if let responseString = String(data: data, encoding: .utf8), !responseString.isEmpty {
+                    print("🧾 Error Body (utf8):\n\(responseString)")
+                } else {
+                    print("🧾 Error Body: <empty or non-utf8>")
                 }
             }
             
@@ -80,11 +113,89 @@ class DataSyncService: ObservableObject {
             
             print("📡 HTTP 200 OK - \(data.count) bytes empfangen")
             
+            // Guard against empty or whitespace-only bodies
+            if data.isEmpty || (String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true) {
+                print("❌ Empty response body from server for URL: \(url)")
+                throw SyncError.decodingError
+            }
+            
             // JSON dekodieren
             let decoder = JSONDecoder()
-            let allDataResponse = try decoder.decode(AllDataResponse.self, from: data)
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            
+            // Temporary: log response body to inspect schema (truncated if very large)
+            if let responseString = String(data: data, encoding: .utf8) {
+                let maxLen = 4000
+                let truncated = responseString.count > maxLen ? String(responseString.prefix(maxLen)) + "\n…(truncated)…" : responseString
+                print("📦 Response JSON (utf8):\n\(truncated)")
+            }
+            
+            // Temporary: generic JSON inspection to understand top-level structure
+            do {
+                let anyJSON = try JSONSerialization.jsonObject(with: data, options: [])
+                print("🔎 Top-level JSON type: \(type(of: anyJSON))")
+                if let dict = anyJSON as? [String: Any] {
+                    print("🔎 Top-level keys: \(Array(dict.keys))")
+                } else if let arr = anyJSON as? [Any] {
+                    print("🔎 Top-level array count: \(arr.count)")
+                }
+            } catch {
+                print("❌ Not valid JSON (preflight inspection): \(error)")
+            }
+            
+            // Decode with detailed error reporting
+            let allDataResponse: AllDataResponse
+            do {
+                allDataResponse = try decoder.decode(AllDataResponse.self, from: data)
+            } catch let DecodingError.keyNotFound(key, context) {
+                print("❌ Key not found: \(key.stringValue), context: \(context.debugDescription), codingPath: \(context.codingPath)")
+                logBodySnippet(data)
+                if let http = response as? HTTPURLResponse {
+                    print("ℹ️ Content-Type during failure: \(http.value(forHTTPHeaderField: "Content-Type") ?? "<none>")")
+                }
+                throw SyncError.decodingError
+            } catch let DecodingError.typeMismatch(type, context) {
+                print("❌ Type mismatch for \(type), context: \(context.debugDescription), codingPath: \(context.codingPath)")
+                logBodySnippet(data)
+                if let http = response as? HTTPURLResponse {
+                    print("ℹ️ Content-Type during failure: \(http.value(forHTTPHeaderField: "Content-Type") ?? "<none>")")
+                }
+                throw SyncError.decodingError
+            } catch let DecodingError.valueNotFound(value, context) {
+                print("❌ Value not found: \(value), context: \(context.debugDescription), codingPath: \(context.codingPath)")
+                logBodySnippet(data)
+                if let http = response as? HTTPURLResponse {
+                    print("ℹ️ Content-Type during failure: \(http.value(forHTTPHeaderField: "Content-Type") ?? "<none>")")
+                }
+                throw SyncError.decodingError
+            } catch let DecodingError.dataCorrupted(context) {
+                print("❌ Data corrupted: \(context.debugDescription), codingPath: \(context.codingPath)")
+                logBodySnippet(data)
+                if let http = response as? HTTPURLResponse {
+                    print("ℹ️ Content-Type during failure: \(http.value(forHTTPHeaderField: "Content-Type") ?? "<none>")")
+                }
+                throw SyncError.decodingError
+            } catch {
+                print("❌ General decoding error: \(error)")
+                logBodySnippet(data)
+                if let http = response as? HTTPURLResponse {
+                    print("ℹ️ Content-Type during failure: \(http.value(forHTTPHeaderField: "Content-Type") ?? "<none>")")
+                }
+                print("ℹ️ Decoding failed: Response body did not match APIModels.AllDataResponse schema.")
+                throw SyncError.decodingError
+            }
             
             print("📊 \(allDataResponse.cards.count) Karten geladen")
+            
+            // Pretty print the decoded response for debugging (without requiring Encodable)
+            print("🧾 Decoded AllDataResponse summary:")
+            print("  cards: \(allDataResponse.cards.count)")
+            if let first = allDataResponse.cards.first {
+                print("  first card: id=\(first.id), title=\(first.title), artist=\(first.artist), year=\(first.year)")
+            }
+            if allDataResponse.cards.isEmpty {
+                print("⚠️ Decoded successfully but 'cards' is empty.")
+            }
             
             // Daten in lokale Datenbank speichern
             try await saveToDatabase(allDataResponse)
@@ -96,7 +207,6 @@ class DataSyncService: ObservableObject {
                 lastSyncDate = Date()
                 hasData = true
             }
-            
         } catch {
             let errorMsg = handleError(error)
             await MainActor.run {
@@ -107,6 +217,21 @@ class DataSyncService: ObservableObject {
         
         await MainActor.run {
             isSyncing = false
+        }
+        
+        await MainActor.run {
+            isSyncing = false
+        }
+    }
+    
+    // Helper to print a safe snippet of the response body for debugging
+    func logBodySnippet(_ data: Data) {
+        if let s = String(data: data, encoding: .utf8) {
+            let maxLen = 800
+            let snippet = s.count > maxLen ? String(s.prefix(maxLen)) + "\n…(truncated)…" : s
+            print("📄 Body snippet:\n\(snippet)")
+        } else {
+            print("📄 Body snippet: <non-utf8>")
         }
     }
     
@@ -119,6 +244,9 @@ class DataSyncService: ObservableObject {
             modelContext.delete(card)
         }
         
+        // NOTE: This code assumes DTO properties may be optional and applies safe defaults.
+        // To fully support this, update APIModels DTO definitions to make fields optional where the server
+        // may omit them (e.g., title, artist, year, apple/spotify fields).
         // Füge neue Daten hinzu
         for cardDTO in response.cards {
             let card = HitsterCard(
@@ -129,10 +257,11 @@ class DataSyncService: ObservableObject {
                 edition: cardDTO.edition ?? "Unknown",
                 languageShort: cardDTO.languageShort ?? "de",
                 languageLong: cardDTO.languageLong ?? "Deutsch",
-                appleId: cardDTO.apple.id,
-                appleUri: cardDTO.apple.uri,
-                spotifyId: cardDTO.spotify.id,
-                spotifyUri: cardDTO.spotify.uri,
+                appleId: cardDTO.apple?.id ?? "",
+                appleUri: cardDTO.apple?.uri ?? "",
+                spotifyId: cardDTO.spotify?.id ?? "",
+                spotifyUri: cardDTO.spotify?.uri ?? "",
+                spotifyUrl: cardDTO.spotify?.url ?? "",
                 lastUpdated: Date()
             )
             modelContext.insert(card)
@@ -203,22 +332,5 @@ class DataSyncService: ObservableObject {
             }
         )
         return try modelContext.fetch(descriptor).first
-    }
-}
-
-enum SyncError: LocalizedError {
-    case invalidURL
-    case serverError
-    case decodingError
-    
-    var errorDescription: String? {
-        switch self {
-        case .invalidURL:
-            return NSLocalizedString("error.invalidURL", value: "Ungültige Server-URL", comment: "")
-        case .serverError:
-            return NSLocalizedString("error.serverError", value: "Server-Fehler", comment: "")
-        case .decodingError:
-            return NSLocalizedString("error.decodingError", value: "Fehler beim Verarbeiten der Daten", comment: "")
-        }
     }
 }

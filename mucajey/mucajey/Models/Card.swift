@@ -15,9 +15,10 @@ final class HitsterCard {
     var appleUri: String
     var spotifyId: String
     var spotifyUri: String
+    var spotifyUrl: String
     var lastUpdated: Date
     
-    init(cardId: String, title: String, artist: String, year: String, edition: String, languageShort: String, languageLong: String, appleId: String, appleUri: String, spotifyId: String, spotifyUri: String, lastUpdated: Date = Date()) {
+    init(cardId: String, title: String, artist: String, year: String, edition: String, languageShort: String, languageLong: String, appleId: String, appleUri: String, spotifyId: String, spotifyUri: String, spotifyUrl: String, lastUpdated: Date = Date()) {
         self.uniqueId = "\(edition)_\(cardId)" // Zusammengesetzte eindeutige ID
         self.cardId = cardId
         self.title = title
@@ -30,6 +31,7 @@ final class HitsterCard {
         self.appleUri = appleUri
         self.spotifyId = spotifyId
         self.spotifyUri = spotifyUri
+        self.spotifyUrl = spotifyUrl
         self.lastUpdated = lastUpdated
     }
 }
