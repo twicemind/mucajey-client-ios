@@ -9,7 +9,7 @@ import SwiftUI
 import UIKit
 
 struct CardDetailView: View {
-    let card: HitsterCard
+    let card: Card
     @State private var showBack = false
     @Environment(\.openURL) private var openURL
 
@@ -86,14 +86,17 @@ struct CardDetailView: View {
                         detailRow(title: "Spotify ID", value: card.spotifyId)
                         detailRow(title: "Spotify URI", value: card.spotifyUri)
                         detailRow(title: "Karten-ID", value: card.cardId)
-                        detailRow(title: "Eindeutige ID", value: card.uniqueId)
                         detailRow(title: "Zuletzt aktualisiert", value: formattedDate(card.lastUpdated))
                     }
                 }
                 .padding(.horizontal)
+                //.opacity(1.0)
             }
+            .opacity(1.0)
             .padding(.vertical)
         }
+        .background(AnimatedMeshGradient()
+            .ignoresSafeArea(edges: .all))
         .navigationTitle("Karte")
         .navigationBarTitleDisplayMode(.inline)
     }

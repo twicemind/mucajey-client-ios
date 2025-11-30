@@ -4,6 +4,16 @@ struct AnimatedMeshGradient: View {
     @State var appear1 = false
     @State var appear2 = false
     @State var appear3 = false
+    
+    private let neonPalette: [Color] = [
+        Color(red: 1.00, green: 0.00, blue: 0.33), // #FF0054
+        Color(red: 1.00, green: 0.55, blue: 0.00), // #FF8C00
+        Color(red: 1.00, green: 0.83, blue: 0.00), // #FFD300
+        Color(red: 0.00, green: 1.00, blue: 0.78), // #00FFC7
+        Color(red: 0.00, green: 0.75, blue: 1.00), // #00BFFF
+        Color(red: 0.75, green: 0.00, blue: 1.00), // #BF00FF
+        Color(red: 1.00, green: 0.24, blue: 0.94)  // #FF3DF0
+    ]
     var body: some View {
         MeshGradient(
             width: 3,
@@ -14,10 +24,18 @@ struct AnimatedMeshGradient: View {
                 [0.0, 1.0], [1.0, appear2 ? 2.0 : 1.0], [1.0, 1.0],
                 [0.0, 0.0], [appear3 ? 0.5 : 1.0, 0.0], [1.0, 0.0],
         ], colors: [
-            appear2 ? .red : .orange, appear2 ? .yellow : .cyan, .orange,
-            appear1 ? .blue : .red, appear1 ? .cyan : .blue, appear1 ? .red : .purple,
-            appear1 ? .red : .cyan, appear1 ? .orange : .blue, appear2 ? .red : .purple,
-            appear3 ? .red : .orange, appear3 ? .orange : .blue, appear1 ? .red : .blue
+            neonPalette[0],
+            appear2 ? neonPalette[3] : neonPalette[1],
+            neonPalette[2],
+            appear1 ? neonPalette[4] : neonPalette[5],
+            appear1 ? neonPalette[3] : neonPalette[4],
+            appear1 ? neonPalette[5] : neonPalette[6],
+            appear1 ? neonPalette[5] : neonPalette[3],
+            appear1 ? neonPalette[1] : neonPalette[4],
+            appear2 ? neonPalette[5] : neonPalette[6],
+            appear3 ? neonPalette[0] : neonPalette[1],
+            appear3 ? neonPalette[1] : neonPalette[4],
+            appear1 ? neonPalette[5] : neonPalette[4]
 
         ])
         .edgesIgnoringSafeArea(.all)

@@ -2,8 +2,8 @@ import Foundation
 
 struct AllDataResponse: Codable {
     let summary: DataSummary
-    let editions: [EditionInfo]
-    let cards: [CardDTO]
+    let editions: [DTOEdition]
+    let cards: [DTOCard]
 }
 
 struct DataSummary: Codable {
@@ -12,30 +12,12 @@ struct DataSummary: Codable {
     let totalFiles: Int
 }
 
-struct EditionInfo: Codable {
+struct CardResponse: Codable {
     let edition: String
-    let languageShort: String
-    let languageLong: String
-    let identifier: String
-    let file: String
-    let cardCount: Int
-    
-    enum CodingKeys: String, CodingKey {
-        case edition
-        case languageShort = "language_short"
-        case languageLong = "language_long"
-        case identifier
-        case file
-        case cardCount
-    }
-}
-
-struct HitsterResponse: Codable {
-    let edition: String
-    let languageShort: String
-    let languageLong: String
-    let identifier: String
-    let cards: [CardDTO]
+    let languageShort: String?
+    let languageLong: String?
+    let identifier: String?
+    let cards: [DTOCard]
     
     enum CodingKeys: String, CodingKey {
         case edition
@@ -46,7 +28,7 @@ struct HitsterResponse: Codable {
     }
 }
 
-struct CardDTO: Codable {
+struct DTOCard: Codable {
     let id: String
     let title: String
     let artist: String
@@ -55,8 +37,8 @@ struct CardDTO: Codable {
     let languageShort: String?
     let languageLong: String?
     let sourceFile: String?
-    let apple: MusicService
-    let spotify: MusicService
+    let apple: MusicService?
+    let spotify: MusicService?
     
     enum CodingKeys: String, CodingKey {
         case id, title, artist, year, edition, apple, spotify
@@ -66,7 +48,28 @@ struct CardDTO: Codable {
     }
 }
 
+struct DTOEdition: Codable {
+    let edition: String
+    let editionName: String
+    let languageShort: String?
+    let languageLong: String?
+    let identifier: String?
+    let file: String?
+    let cardCount: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case edition
+        case editionName = "edition_name"
+        case languageShort = "language_short"
+        case languageLong = "language_long"
+        case identifier
+        case file
+        case cardCount
+    }
+}
+
 struct MusicService: Codable {
-    let id: String
-    let uri: String
+    let id: String?
+    let uri: String?
+    let url: String?
 }

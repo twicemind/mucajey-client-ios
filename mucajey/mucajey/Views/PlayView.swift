@@ -1,17 +1,15 @@
 import SwiftUI
 import MusicKit
 import StoreKit
-internal import Combine
+import Combine
 
 struct PlayView: View {
-    let card: HitsterCard?
+    let card: Card?
     let appleUri: String?
     let spotifyUri: String?
-    @Environment(\.dismiss) private var dismiss
     @StateObject private var musicPlayer = MusicPlayerManager()
-    @State private var showQRScanner = false
     
-    init(card: HitsterCard) {
+    init(card: Card) {
         self.card = card
         self.appleUri = card.appleUri
         self.spotifyUri = card.spotifyUri
@@ -24,188 +22,38 @@ struct PlayView: View {
     }
     
     var body: some View {
-        ZStack {
-            // Pink gradient background
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.91, green: 0.18, blue: 0.49),
-                    Color(red: 0.95, green: 0.25, blue: 0.55)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "chevron.left")
-                                .font(.title3)
-                            Text(LocalizedStringKey("nav.back"))
-                                .font(.headline)
-                        }
-                        .foregroundColor(.white)
-                    }
+        GeometryReader { geo in
+            ZStack {
+                AnimatedMeshGradient()
+                    .ignoresSafeArea()
+                
+                VStack {
+                    Spacer()
+                    
+                    RoundedRectangle(cornerRadius: 42, style: .continuous)
+                        .fill(Color.black.opacity(0.5))
+                        .overlay(cardContent)
+                        .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
+                        .frame(
+                            width: min(geo.size.width * 0.88, 540),
+                            height: geo.size.height * 0.40
+                        )
+                        .padding(.top, 20)
                     
                     Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 20)
-                
-                Spacer()
-                
-                // Card Display
-                VStack(spacing: 24) {
-                    // Album Art Placeholder
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.white.opacity(0.2))
-                        .frame(width: 280, height: 280)
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .font(.system(size: 80))
-                                .foregroundColor(.white.opacity(0.5))
-                        )
-                        .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
                     
-                    // Song Info
-                    VStack(spacing: 8) {
-                        Text(card?.title ?? "")
-                            .font(.title2)
-                            .fontWeight(.bold)
+                    if let error = musicPlayer.errorMessage {
+                        Text(error)
+                            .font(.caption)
                             .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                        
-                        Text(card?.artist ?? "")
-                            .font(.title3)
-                            .foregroundColor(.white.opacity(0.9))
-                            .multilineTextAlignment(.center)
-                        
-                        Text(card?.year ?? "")
-                            .font(.headline)
-                            .foregroundColor(.white.opacity(0.7))
-                    }
-                    .padding(.horizontal, 40)
-                    
-                    // Player Controls
-                    VStack(spacing: 32) {
-                        // Progress Bar (placeholder)
-                        VStack(spacing: 8) {
-                            ProgressView(value: musicPlayer.progress)
-                                .progressViewStyle(LinearProgressViewStyle(tint: .white))
-                                .frame(height: 4)
-                            
-                            HStack {
-                                Text(formatTime(musicPlayer.currentTime))
-                                    .font(.caption)
-                                    .foregroundColor(.white.opacity(0.7))
-                                
-                                Spacer()
-                                
-                                Text(formatTime(musicPlayer.duration))
-                                    .font(.caption)
-                                    .foregroundColor(.white.opacity(0.7))
-                            }
-                        }
-                        .padding(.horizontal, 40)
-                        
-                        // Play/Pause Button
-                        HStack(spacing: 40) {
-                            Button(action: {
-                                musicPlayer.skipBackward()
-                            }) {
-                                Image(systemName: "backward.fill")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(.white)
-                            }
-                            
-                            Button(action: {
-                                musicPlayer.togglePlayPause()
-                            }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(.white)
-                                        .frame(width: 80, height: 80)
-                                        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
-                                    
-                                    Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
-                                        .font(.system(size: 36))
-                                        .foregroundColor(Color(red: 0.91, green: 0.18, blue: 0.49))
-                                        .offset(x: musicPlayer.isPlaying ? 0 : 3)
-                                }
-                            }
-                            
-                            Button(action: {
-                                musicPlayer.skipForward()
-                            }) {
-                                Image(systemName: "forward.fill")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(.white)
-                            }
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                // Service Info
-                HStack(spacing: 16) {
-                    if let apple = appleUri, !apple.isEmpty {
-                        Button(action: {
-                            openURLString(apple)
-                        }) {
-                            HStack {
-                                Image(systemName: "applelogo")
-                                Text(LocalizedStringKey("player.openAppleMusic"))
-                                    .font(.subheadline)
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 12)
+                            .padding()
                             .background(
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(.white.opacity(0.3))
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(.red.opacity(0.3))
                             )
-                        }
-                    }
-                    
-                    if let spotify = spotifyUri, !spotify.isEmpty {
-                        Button(action: {
-                            openURLString(spotify)
-                        }) {
-                            HStack {
-                                Image(systemName: "music.note")
-                                Text(LocalizedStringKey("player.openSpotify"))
-                                    .font(.subheadline)
-                            }
-                            .foregroundColor(.white)
                             .padding(.horizontal, 20)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(.white.opacity(0.3))
-                            )
-                        }
+                            .padding(.bottom, 20)
                     }
-                }
-                .padding(.bottom, 40)
-                
-                // Error Message
-                if let error = musicPlayer.errorMessage {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(.red.opacity(0.3))
-                        )
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
                 }
             }
         }
@@ -213,44 +61,83 @@ struct PlayView: View {
             setupPlayer()
         }
         .onDisappear {
-            musicPlayer.stop()
+            musicPlayer.stop() // 🔴 Musik endet IMMER beim Verlassen der View
         }
-        .gesture(
-            DragGesture(minimumDistance: 50)
-                .onEnded { value in
-                    // Swipe right to left (negative translation)
-                    if value.translation.width < -50 {
-                        musicPlayer.stop()
-                        dismiss()
-                        // Kurze Verzögerung, dann Scanner öffnen
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            showQRScanner = true
-                        }
+        .navigationTitle("Player")
+        .toolbarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
+    }
+    
+    @ViewBuilder
+    private var cardContent: some View {
+        VStack(spacing: 24) {
+            HStack(spacing: 40) {
+                Button {
+                    musicPlayer.seekBackward10()
+                } label: {
+                    Image(systemName: "gobackward.10")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(14)
+                        .glassEffect(.clear)
+                        .clipShape(Circle())
+                }
+                
+                Button {
+                    musicPlayer.togglePlayPause()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .frame(width: 86, height: 86)
+                            .glassEffect(.clear)
+                        Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(Color(red: 0.91, green: 0.18, blue: 0.49))
+                            .offset(x: musicPlayer.isPlaying ? 0 : 3)
                     }
                 }
-        )
-        .fullScreenCover(isPresented: $showQRScanner) {
-            QRScannerView()
+                
+                Button {
+                    musicPlayer.seekForward10()
+                } label: {
+                    Image(systemName: "goforward.10")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(14)
+                        .glassEffect(.clear)
+                        .clipShape(Circle())
+                }
+            }
+            
+            VStack(spacing: 8) {
+                ProgressView(value: musicPlayer.progress)
+                    .tint(.white)
+                    .frame(height: 4)
+                
+                HStack {
+                    Text(formatTime(musicPlayer.currentTime))
+                        .font(.caption.monospacedDigit())
+                        .foregroundColor(.white.opacity(0.8))
+                    Spacer()
+                    Text(formatTime(musicPlayer.duration))
+                        .font(.caption.monospacedDigit())
+                        .foregroundColor(.white.opacity(0.8))
+                }
+            }
+        }
+        .padding(28)
+        .onDisappear {
+            musicPlayer.stop()
         }
     }
     
     private func setupPlayer() {
-        // Prefer Apple Music by ID if available, else try URIs
         if let card, !card.appleId.isEmpty {
             musicPlayer.loadAppleMusicTrack(appleId: card.appleId)
             return
         }
         if let apple = appleUri, !apple.isEmpty {
             openURLString(apple)
-            return
-        }
-        if let card, !card.spotifyId.isEmpty {
-            musicPlayer.loadSpotifyTrack(spotifyId: card.spotifyId)
-            return
-        }
-        if let spotify = spotifyUri, !spotify.isEmpty {
-            openURLString(spotify)
-            return
         }
     }
     
@@ -261,13 +148,13 @@ struct PlayView: View {
     }
     
     private func formatTime(_ seconds: Double) -> String {
+        guard seconds.isFinite && seconds >= 0 else { return "0:00" }
         let minutes = Int(seconds) / 60
         let secs = Int(seconds) % 60
         return String(format: "%d:%02d", minutes, secs)
     }
 }
 
-// Music Player Manager
 @MainActor
 class MusicPlayerManager: ObservableObject {
     @Published var isPlaying = false
@@ -276,32 +163,26 @@ class MusicPlayerManager: ObservableObject {
     @Published var duration: Double = 0
     @Published var errorMessage: String?
     
-    private var player: SystemMusicPlayer?
-    private var musicAuthorizationStatus: MusicAuthorization.Status = .notDetermined
-    
-    init() {
-        player = SystemMusicPlayer.shared
-    }
+    private var player = SystemMusicPlayer.shared
     
     func loadAppleMusicTrack(appleId: String) {
         Task {
-            // Check authorization
-            musicAuthorizationStatus = await MusicAuthorization.request()
-            
-            guard musicAuthorizationStatus == .authorized else {
+            guard await MusicAuthorization.request() == .authorized else {
                 errorMessage = String(localized: "player.authRequired")
                 return
             }
             
             do {
-                // Search for track by ID
-                let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(appleId))
+                let request = MusicCatalogResourceRequest<Song>(
+                    matching: \.id,
+                    equalTo: MusicItemID(appleId)
+                )
                 let response = try await request.response()
                 
                 if let song = response.items.first {
-                    player?.queue = [song]
+                    player.queue = [song]
                     duration = song.duration ?? 0
-                    try await player?.play()
+                    try await player.play()
                     isPlaying = true
                     startProgressTracking()
                 } else {
@@ -313,20 +194,14 @@ class MusicPlayerManager: ObservableObject {
         }
     }
     
-    func loadSpotifyTrack(spotifyId: String) {
-        // Spotify SDK würde hier verwendet werden
-        // Für jetzt öffnen wir nur die Spotify App
-        errorMessage = String(localized: "player.spotifyRequired")
-    }
-    
     func togglePlayPause() {
         Task {
             do {
                 if isPlaying {
-                    player?.pause()
+                    player.pause()
                     isPlaying = false
                 } else {
-                    try await player?.play()
+                    try await player.play()
                     isPlaying = true
                     startProgressTracking()
                 }
@@ -336,33 +211,45 @@ class MusicPlayerManager: ObservableObject {
         }
     }
     
-    func skipForward() {
-        Task {
-            try? await player?.skipToNextEntry()
-        }
-    }
+    func seekForward10() { seek(by: 10) }
+    func seekBackward10() { seek(by: -10) }
     
-    func skipBackward() {
-        Task {
-            try? await player?.skipToPreviousEntry()
+    private func seek(by seconds: TimeInterval) {
+        let current = player.playbackTime
+        guard current.isFinite else { return }
+        
+        let newTime = max(0, min(current + seconds, duration > 0 ? duration : current + seconds))
+        player.playbackTime = newTime
+        currentTime = newTime
+        
+        if duration > 0 {
+            progress = currentTime / duration
         }
     }
     
     func stop() {
-        player?.queue = []
+        // 👇 wirklich die Wiedergabe stoppen
+        player.pause()
+        
+        // Queue leeren & State resetten
+        player.queue = []
         isPlaying = false
+        progress = 0
+        currentTime = 0
+        duration = 0
     }
     
     private func startProgressTracking() {
         Task {
             while isPlaying {
-                if let playbackTime = player?.playbackTime {
+                let playbackTime = player.playbackTime
+                if playbackTime.isFinite {
                     currentTime = playbackTime
                     if duration > 0 {
                         progress = currentTime / duration
                     }
                 }
-                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                try? await Task.sleep(nanoseconds: 500_000_000)
             }
         }
     }

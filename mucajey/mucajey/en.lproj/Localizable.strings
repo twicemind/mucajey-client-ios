@@ -10,6 +10,7 @@
 "start.instructions" = "Game Rules";
 "start.or" = "OR";
 "start.startGame" = "Start Game";
+"start.cards" = "Cards";
 
 // Navigation
 "nav.help" = "Help";

@@ -14,8 +14,10 @@ struct mucajeyApp: App {
     
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            HitsterCard.self,
-            SyncStatus.self
+            Card.self,
+            Edition.self,
+            CardSyncStatus.self,
+            EditionSyncStatus.self
         ])
         let modelConfiguration = ModelConfiguration(
             schema: schema,

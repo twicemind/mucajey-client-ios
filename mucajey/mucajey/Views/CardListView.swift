@@ -43,8 +43,8 @@ enum StreamingOptionFilter: String, CaseIterable {
 }
 
 struct CardListView: View {
-    @Query private var allCards: [HitsterCard]
-    var editionCards: [HitsterCard]
+    @Query private var allCards: [Card]
+    var editionCards: [Card]
     @State private var searchText = ""
     @State private var selectedEdition: String = "Alle"
     @State private var sortOption: SortOptionFilter = .edition
@@ -63,7 +63,7 @@ struct CardListView: View {
         filteredCards.filter { !$0.spotifyId.isEmpty || !$0.spotifyUri.isEmpty }.count
     }
     
-    var sortedCards: [HitsterCard] {
+    var sortedCards: [Card] {
         var cards = filteredCards
         
         switch sortOption {
@@ -82,7 +82,7 @@ struct CardListView: View {
         return cards
     }
     
-    var filteredCards: [HitsterCard] {
+    var filteredCards: [Card] {
         var filtered = allCards
         
         // Filter nach Edition
@@ -118,7 +118,7 @@ struct CardListView: View {
         return filtered
     }
     
-    var groupedCards: [String: [HitsterCard]] {
+    var groupedCards: [String: [Card]] {
         switch sortOption {
         case .year:
             return Dictionary(grouping: sortedCards) { $0.year }
@@ -215,8 +215,8 @@ struct CardListView: View {
 }
 
 #Preview {
-    @Previewable @Query var cards: [HitsterCard]
+    @Previewable @Query var cards: [Card]
     
     CardListView(editionCards: cards)
-        .modelContainer(for: [HitsterCard.self])
+        .modelContainer(for: [Card.self])
 }

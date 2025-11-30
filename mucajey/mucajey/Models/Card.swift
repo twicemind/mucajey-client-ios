@@ -2,24 +2,36 @@ import Foundation
 import SwiftData
 
 @Model
-final class HitsterCard {
-    @Attribute(.unique) var uniqueId: String // Zusammengesetzte ID aus cardId + edition
-    var cardId: String // Original Karten-ID
-    var title: String
-    var artist: String
-    var year: String
-    var edition: String
-    var languageShort: String
-    var languageLong: String
-    var appleId: String
-    var appleUri: String
-    var spotifyId: String
-    var spotifyUri: String
-    var spotifyUrl: String
-    var lastUpdated: Date
+final class Card {
+    var cardId: String = ""
+    var title: String = ""
+    var artist: String = ""
+    var year: String = ""
+    var edition: String = ""
+    var languageShort: String = ""
+    var languageLong: String = ""
+    var appleId: String = ""
+    var appleUri: String = ""
+    var spotifyId: String = ""
+    var spotifyUri: String = ""
+    var spotifyUrl: String = ""
+    var lastUpdated: Date = Date()
     
-    init(cardId: String, title: String, artist: String, year: String, edition: String, languageShort: String, languageLong: String, appleId: String, appleUri: String, spotifyId: String, spotifyUri: String, spotifyUrl: String, lastUpdated: Date = Date()) {
-        self.uniqueId = "\(edition)_\(cardId)" // Zusammengesetzte eindeutige ID
+    init(
+        cardId: String,
+        title: String,
+        artist: String,
+        year: String,
+        edition: String,
+        languageShort: String,
+        languageLong: String,
+        appleId: String,
+        appleUri: String,
+        spotifyId: String,
+        spotifyUri: String,
+        spotifyUrl: String,
+        lastUpdated: Date = .now
+    ) {
         self.cardId = cardId
         self.title = title
         self.artist = artist
@@ -37,14 +49,12 @@ final class HitsterCard {
 }
 
 @Model
-final class SyncStatus {
-    @Attribute(.unique) var id: String
-    var lastSync: Date?
-    var isFirstSync: Bool
-    var errorMessage: String?
+final class CardSyncStatus {
+    var lastSync: Date? = nil
+    var isFirstSync: Bool = true
+    var errorMessage: String? = nil
     
-    init(id: String = "sync_status", lastSync: Date? = nil, isFirstSync: Bool = true, errorMessage: String? = nil) {
-        self.id = id
+    init(lastSync: Date? = nil, isFirstSync: Bool = true, errorMessage: String? = nil) {
         self.lastSync = lastSync
         self.isFirstSync = isFirstSync
         self.errorMessage = errorMessage

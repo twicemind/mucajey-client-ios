@@ -36,9 +36,10 @@ enum StreamingFilter: String, CaseIterable {
 struct DataOverviewView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Query private var allCards: [HitsterCard]
-    @Query private var syncStatus: [SyncStatus]
-    
+    @Query private var allCards: [Card]
+    @Query private var cardSyncStatus: [CardSyncStatus]
+    @Query private var editionSyncStatus: [EditionSyncStatus]
+
     @State private var searchText = ""
     @State private var selectedEdition: String = "Alle"
     @State private var sortOption: SortOption = .year
@@ -60,7 +61,7 @@ struct DataOverviewView: View {
         filteredCards.filter { !$0.spotifyId.isEmpty || !$0.spotifyUri.isEmpty }.count
     }
     
-    var sortedCards: [HitsterCard] {
+    var sortedCards: [Card] {
         var cards = filteredCards
         
         switch sortOption {
@@ -77,7 +78,7 @@ struct DataOverviewView: View {
         return cards
     }
     
-    var filteredCards: [HitsterCard] {
+    var filteredCards: [Card] {
         var filtered = allCards
         
         // Filter nach Edition
@@ -113,7 +114,7 @@ struct DataOverviewView: View {
         return filtered
     }
     
-    var groupedCards: [String: [HitsterCard]] {
+    var groupedCards: [String: [Card]] {
         switch sortOption {
         case .year:
             return Dictionary(grouping: sortedCards) { $0.year }
@@ -212,11 +213,19 @@ struct DataOverviewView: View {
                             subtitle: "\(Int((Double(cardsWithSpotify) / Double(max(filteredCards.count, 1))) * 100))%"
                         )
                         
-                        if let lastSync = syncStatus.first?.lastSync {
+                        if let lastCardSync = cardSyncStatus.first?.lastSync {
+                            InfoCard(
+                                icon: "clock",
+                                title: "Letztes Card Update",
+                                value: formatDate(lastCardSync)
+                            )
+                        }
+                        
+                        if let lastEditionSync = editionSyncStatus.first?.lastSync {
                             InfoCard(
                                 icon: "clock",
                                 title: "Letztes Update",
-                                value: formatDate(lastSync)
+                                value: formatDate(lastEditionSync)
                             )
                         }
                     }
@@ -297,7 +306,7 @@ struct DataOverviewView: View {
     
 
     struct CardRow: View {
-        let card: HitsterCard
+        let card: Card
         let sortOption: SortOption
         @State private var isExpanded = false
         @State private var showPlayView = false
@@ -647,5 +656,5 @@ struct DataOverviewView: View {
 
 #Preview {
     DataOverviewView()
-        .modelContainer(for: [HitsterCard.self, SyncStatus.self])
+        .modelContainer(for: [Card.self, CardSyncStatus.self, Edition.self, EditionSyncStatus.self])
 }

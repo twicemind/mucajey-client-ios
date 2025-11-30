@@ -1,134 +1,76 @@
 import SwiftUI
-import AVFoundation
+@preconcurrency import AVFoundation
 import SwiftData
-internal import Combine
+import Combine
 
 struct QRScannerView: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @StateObject private var scannerViewModel = QRScannerViewModel()
     @State private var showPlayView = false
-    @State private var scannedCard: HitsterCard?
+    @State private var scannedCard: Card?
+    @Query private var allCards: [Card]
     
+    private let baseURL = "https://api.mucajey.twicemind.com"
+
     var body: some View {
         ZStack {
-            // Camera Preview
-            QRCodeCameraView(viewModel: scannerViewModel)
+            // Hintergrund
+            AnimatedMeshGradient()
                 .ignoresSafeArea()
             
-            // Overlay
+            Color.black.opacity(0.25)
+                .ignoresSafeArea()
+            
             VStack {
-                // Header
-                HStack {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "chevron.left")
-                                .font(.title3)
-                            Text(LocalizedStringKey("nav.back"))
-                                .font(.headline)
-                        }
-                        .foregroundColor(.white)
-                        .glassEffect(.clear)
-                        .padding(12)
-                        /*.background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(.black.opacity(0.5))
-                        )*/
-                    }
-                    
-                    Spacer()
-                }
-                .padding(20)
-                
-                Spacer()
-                
-                // Scanning Frame
+                // Scanning Frame inkl. Kamera + Flashlight-Button
                 ZStack {
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(scannerViewModel.isScanning ? Color.white : Color(red: 0.91, green: 0.18, blue: 0.49), lineWidth: 3)
-                        .frame(width: 280, height: 280)
-                        .shadow(color: .black.opacity(0.3), radius: 10)
-                    
-                    // Corner indicators
-                    VStack {
-                        HStack {
-                            CornerIndicator(position: .topLeft)
-                            Spacer()
-                            CornerIndicator(position: .topRight)
+                    ZStack(alignment: .bottomTrailing) {
+                        QRCodeCameraView(viewModel: scannerViewModel)
+                            .frame(width: 260, height: 260)
+                        
+                        // Flashlight-Button in der rechten unteren Ecke *in* der Cam-View
+                        Button(action: {
+                            scannerViewModel.toggleFlashlight()
+                        }) {
+                            Image(systemName: scannerViewModel.isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(14)            // gleichmäßig → Kreis!
+                                .glassEffect(.clear)
+                                .clipShape(Circle())    // macht ihn wirklich rund
+                                .shadow(radius: 8)
                         }
-                        Spacer()
-                        HStack {
-                            CornerIndicator(position: .bottomLeft)
-                            Spacer()
-                            CornerIndicator(position: .bottomRight)
-                        }
+                        .padding(10) // Abstand zum Rand – bleibt erhalten
                     }
+                    .frame(width: 260, height: 260)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(
+                                scannerViewModel.isScanning
+                                ? Color.white
+                                : Color(red: 0.91, green: 0.18, blue: 0.49),
+                                lineWidth: 3
+                            )
+                            .shadow(color: .black.opacity(0.3), radius: 10)
+                    )
                     .frame(width: 280, height: 280)
                 }
                 
-                Spacer()
-                
                 // Instructions
                 VStack(spacing: 16) {
-                    Text(LocalizedStringKey("scanner.instruction"))
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                    
                     if scannerViewModel.isScanning {
                         HStack(spacing: 8) {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            Text(LocalizedStringKey("scanner.scanning"))
-                                .font(.subheadline)
-                                .foregroundColor(.white)
                         }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(.black.opacity(0.6))
-                        )
+                        .padding(20)
                     }
-                    
-                    // Flashlight Toggle
-                    Button(action: {
-                        scannerViewModel.toggleFlashlight()
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: scannerViewModel.isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill")
-                            Text(scannerViewModel.isFlashlightOn ? LocalizedStringKey("scanner.flashlightOff") : LocalizedStringKey("scanner.flashlightOn"))
-                        }
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+    
+                    Text("Scannen Sie den QR-Code auf der Rückseite der Karte")
+                        .font(.headline)
                         .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(.black.opacity(0.6))
-                        )
-                    }
-                    
-                    // TEST BUTTON - Simuliert erfolgreichen Scan
-                    Button(action: {
-                        simulateSuccessfulScan()
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "play.circle.fill")
-                            Text("TEST: Beispielkarte laden")
-                        }
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(Color(red: 0.91, green: 0.18, blue: 0.49))
-                        )
-                    }
+                        .multilineTextAlignment(.center)
                 }
                 .padding(.bottom, 60)
             }
@@ -162,128 +104,163 @@ struct QRScannerView: View {
                 processScannedURL(url)
             }
         }
-        .fullScreenCover(isPresented: $showPlayView) {
-            if let card = scannedCard {
-                PlayView(card: card)
+        // 👇 ersetzt das alte onDismiss aus fullScreenCover
+        .onChange(of: showPlayView) { _, isShowing in
+            if !isShowing {
+                // PlayView wurde geschlossen → Scanner frisch zurücksetzen
+                scannerViewModel.scannedURL = nil
+                scannerViewModel.errorMessage = nil
+                scannerViewModel.startScanning()
+            } else {
+                // PlayView wird angezeigt → lieber stoppen
+                scannerViewModel.stopScanning()
             }
         }
+        // 👇 Navigation-Push zur PlayView (statt fullScreenCover)
+        .navigationDestination(isPresented: $showPlayView) {
+            if let card = scannedCard {
+                PlayView(card: card)
+            } else {
+                EmptyView()
+            }
+        }
+        .navigationTitle("Scanner")
+        .toolbarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
     }
     
     private func processScannedURL(_ urlString: String) {
-        guard let url = URL(string: urlString),
+        // 1. URL normalisieren: falls kein http/https am Anfang, ergänzen wir https://
+        let normalizedURLString: String
+        if urlString.lowercased().hasPrefix("http://") || urlString.lowercased().hasPrefix("https://") {
+            normalizedURLString = urlString
+        } else {
+            normalizedURLString = "https://" + urlString
+        }
+        
+        // 2. URL & Komponenten bauen
+        guard let url = URL(string: normalizedURLString),
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
             scannerViewModel.errorMessage = String(localized: "scanner.invalidQR")
             return
         }
         
-        // Parse URL: http://www.hitstergame.com/de/00001 oder http://www.hitstergame.com/de/aaaa0007/00001
-        let pathComponents = components.path.split(separator: "/").map(String.init)
+        // Erwartete Pfade:
+        // /de/00073                  -> ["de", "00073"]
+        // /de/aaaa0007/00073         -> ["de", "aaaa0007", "00073"]
+        let pathComponents = components.path
+            .split(separator: "/")
+            .map(String.init)
         
         guard pathComponents.count >= 2 else {
             scannerViewModel.errorMessage = String(localized: "scanner.invalidFormat")
             return
         }
         
-        let language = pathComponents[0] // "de"
-        var edition = ""
-        var cardId = ""
+        let language = pathComponents[0]   // "de"
+        let edition: String
+        let cardId: String
         
         if pathComponents.count == 2 {
-            // Format: /de/00001 (Basis-Edition)
+            // Classic: /de/00073
+            edition = "hitster-\(language)"                   // Classic/Basis-Edition
             cardId = pathComponents[1]
-            edition = "" // Basis-Edition hat kein Prefix
         } else if pathComponents.count == 3 {
-            // Format: /de/aaaa0007/00001
-            edition = pathComponents[1]
+            // Edition mit Identifier: /de/aaaa0007/00073
+            edition = "hitster-\(language)-\(pathComponents[1])"
             cardId = pathComponents[2]
         } else {
+            // Unerwartetes Format
             scannerViewModel.errorMessage = String(localized: "scanner.invalidFormat")
             return
         }
         
-        // Suche Karte in der Datenbank
+        print("📍 Scan erfolgreich")
+        print("URL: \(urlString)")
+        print("Edition: \(edition) | CardID: \(cardId) | Sprache: \(language)")
+        
+        // Weiterverarbeitung
         findCard(edition: edition, cardId: cardId, language: language)
     }
     
-    private func findCard(edition: String, cardId: String, language: String) {
-        let predicate = #Predicate<HitsterCard> { card in
-            card.cardId == cardId
+    func filteredCards(selectedEdition: String) -> [Card] {
+        if selectedEdition == "Alle" {
+            return allCards
+        } else {
+            var cards = allCards.filter { $0.edition == selectedEdition }
+            cards.sort { $0.cardId < $1.cardId }
+            return cards
         }
+    }
+    
+    private func findCard(edition: String, cardId: String, language: String) {
+        let editionCards: [Card] = filteredCards(selectedEdition: edition)
+        let cardWithID: [Card] = editionCards.filter { $0.cardId == cardId }
         
-        let descriptor = FetchDescriptor<HitsterCard>(predicate: predicate)
-        
-        do {
-            let cards = try modelContext.fetch(descriptor)
-            
-            // Wenn Edition angegeben, nach Edition filtern
-            let filteredCards: [HitsterCard]
-            if !edition.isEmpty {
-                // Suche nach Edition-Identifier in der Edition-Bezeichnung
-                // z.B. "aaaa0007" sollte Karten mit diesem Identifier finden
-                filteredCards = cards.filter { card in
-                    // Prüfe ob die Edition den identifier enthält
-                    card.edition.lowercased().contains(edition.lowercased())
-                }
-            } else {
-                // Basis-Edition (Hitster Deutschland, die Hauptedition ohne zusätzlichen Identifier)
-                // Dies sind die Karten aus hitster-de.json
-                filteredCards = cards.filter { card in
-                    let editionLower = card.edition.lowercased()
-                    // Hauptedition hat keine Suffixe wie "aaaa"
-                    return editionLower.contains("hitster") && 
-                           editionLower.contains("deutsch") &&
-                           !editionLower.contains("aaaa")
-                }
-            }
-            
-            if let card = filteredCards.first {
+        if let card = cardWithID.first {
+            // If Apple Music data already present, play immediately
+            if !(card.appleId).isEmpty && !(card.appleUri).isEmpty {
                 scannedCard = card
                 showPlayView = true
                 scannerViewModel.stopScanning()
             } else {
-                scannerViewModel.errorMessage = String(localized: "scanner.cardNotFound")
-                // Nach 2 Sekunden wieder scannen
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    scannerViewModel.errorMessage = nil
-                    scannerViewModel.startScanning()
+                // Trigger mapping, then present
+                scannerViewModel.isScanning = true
+                Task { @MainActor in
+                    await self.appleMusicMapping(card: card)
                 }
             }
-        } catch {
-            scannerViewModel.errorMessage = "\(String(localized: "scanner.searchError")): \(error.localizedDescription)"
+        } else {
+            scannerViewModel.errorMessage = String(localized: "scanner.cardNotFound")
+            // Nach 2 Sekunden wieder scannen
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                scannerViewModel.errorMessage = nil
+                scannerViewModel.startScanning()
+            }
         }
     }
     
-    // TEST FUNKTION - Simuliert erfolgreichen Scan einer Beispielkarte
-    private func simulateSuccessfulScan() {
-        scannerViewModel.stopScanning()
-        
-        // Suche eine Karte aus der Basis-Edition (hitster-de) mit Apple Music ID
-        let predicate = #Predicate<HitsterCard> { card in
-            !card.appleId.isEmpty
-        }
-        
-        let descriptor = FetchDescriptor<HitsterCard>(predicate: predicate)
-        
+    private func appleMusicMapping(card: Card) async {
         do {
-            let cards = try modelContext.fetch(descriptor)
-            
-            // Filter auf Basis-Edition
-            let baseEditionCards = cards.filter { card in
-                let editionLower = card.edition.lowercased()
-                return editionLower.contains("hitster") && 
-                       editionLower.contains("deutsch") &&
-                       !editionLower.contains("aaaa")
-            }
-            
-            if let testCard = baseEditionCards.first {
-                scannedCard = testCard
-                showPlayView = true
+            let mapping = try await self.triggerMapping(card: card)
+            // Persist Apple Music data into the card
+            if let apple = mapping.apple, let id = apple.id, let uri = apple.uri {
+                card.appleId = id
+                card.appleUri = uri
+            } else if let cardApple = mapping.card?.apple, let id = cardApple.id, let uri = cardApple.uri {
+                card.appleId = id
+                card.appleUri = uri
             } else {
-                scannerViewModel.errorMessage = "TEST: Keine Karte mit Apple Music ID gefunden"
+                // If mapping didn't provide both id and uri, report error and resume scanning
+                self.scannerViewModel.errorMessage = String(localized: "scanner.mappingMissingData")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    self.scannerViewModel.errorMessage = nil
+                    self.scannerViewModel.startScanning()
+                }
+                return
             }
+
+            // Present play view with updated card
+            self.scannedCard = card
+            self.showPlayView = true
+            self.scannerViewModel.stopScanning()
         } catch {
-            scannerViewModel.errorMessage = "TEST: Fehler beim Laden der Testkarte"
+            let errorMsg = ErrorHandler().handleError(error)
+            self.scannerViewModel.errorMessage = errorMsg
+            // Resume scanning after short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.scannerViewModel.errorMessage = nil
+                self.scannerViewModel.startScanning()
+            }
         }
+    }
+    
+    private func triggerMapping(card: Card) async throws -> DTOModelsAPI.AppleMappingResponse {
+        let data = try await APICard().map(edition: card.edition, cardID: card.cardId)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        return try decoder.decode(DTOModelsAPI.AppleMappingResponse.self, from: data)
     }
 }
 
@@ -331,7 +308,6 @@ struct CornerIndicator: View {
     }
 }
 
-// QR Code Scanner ViewModel
 @MainActor
 class QRScannerViewModel: NSObject, ObservableObject, AVCaptureMetadataOutputObjectsDelegate {
     @Published var isScanning = false
@@ -343,11 +319,26 @@ class QRScannerViewModel: NSObject, ObservableObject, AVCaptureMetadataOutputObj
     private var previewLayer: AVCaptureVideoPreviewLayer?
     
     func startScanning() {
-        checkPermissions()
+        // Wenn Session schon existiert → einfach wieder starten
+        if let session = captureSession {
+            if !session.isRunning {
+                DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                    session.startRunning()
+                    DispatchQueue.main.async {
+                        self?.isScanning = true
+                    }
+                }
+            }
+        } else {
+            // Erster Start → Permissions + Setup
+            checkPermissions()
+        }
     }
     
     func stopScanning() {
-        captureSession?.stopRunning()
+        if let session = captureSession, session.isRunning {
+            session.stopRunning()
+        }
         isScanning = false
     }
     
@@ -373,12 +364,12 @@ class QRScannerViewModel: NSObject, ObservableObject, AVCaptureMetadataOutputObj
     private func checkPermissions() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            setupCamera()
+            setupCameraIfNeeded()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
                 DispatchQueue.main.async {
                     if granted {
-                        self?.setupCamera()
+                        self?.setupCameraIfNeeded()
                     } else {
                         self?.errorMessage = String(localized: "scanner.permissionDenied")
                     }
@@ -391,36 +382,37 @@ class QRScannerViewModel: NSObject, ObservableObject, AVCaptureMetadataOutputObj
         }
     }
     
-    private func setupCamera() {
-        captureSession = AVCaptureSession()
+    private func setupCameraIfNeeded() {
+        // 👇 Nur einmal Session und Pipeline erzeugen
+        if captureSession != nil {
+            startScanning()
+            return
+        }
         
-        guard let captureSession = captureSession,
-              let videoCaptureDevice = AVCaptureDevice.default(for: .video) else {
+        let session = AVCaptureSession()
+        captureSession = session
+        
+        guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else {
             errorMessage = String(localized: "scanner.cameraError")
             return
         }
         
-        let videoInput: AVCaptureDeviceInput
-        
         do {
-            videoInput = try AVCaptureDeviceInput(device: videoCaptureDevice)
+            let videoInput = try AVCaptureDeviceInput(device: videoCaptureDevice)
+            if session.canAddInput(videoInput) {
+                session.addInput(videoInput)
+            } else {
+                errorMessage = String(localized: "scanner.inputError")
+                return
+            }
         } catch {
             errorMessage = String(localized: "scanner.cameraError")
             return
         }
         
-        if captureSession.canAddInput(videoInput) {
-            captureSession.addInput(videoInput)
-        } else {
-            errorMessage = String(localized: "scanner.inputError")
-            return
-        }
-        
         let metadataOutput = AVCaptureMetadataOutput()
-        
-        if captureSession.canAddOutput(metadataOutput) {
-            captureSession.addOutput(metadataOutput)
-            
+        if session.canAddOutput(metadataOutput) {
+            session.addOutput(metadataOutput)
             metadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
             metadataOutput.metadataObjectTypes = [.qr]
         } else {
@@ -429,14 +421,16 @@ class QRScannerViewModel: NSObject, ObservableObject, AVCaptureMetadataOutputObj
         }
         
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            captureSession.startRunning()
+            session.startRunning()
             DispatchQueue.main.async {
                 self?.isScanning = true
             }
         }
     }
     
-    nonisolated func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+    nonisolated func metadataOutput(_ output: AVCaptureMetadataOutput,
+                                    didOutput metadataObjects: [AVMetadataObject],
+                                    from connection: AVCaptureConnection) {
         if let metadataObject = metadataObjects.first,
            let readableObject = metadataObject as? AVMetadataMachineReadableCodeObject,
            let stringValue = readableObject.stringValue {
@@ -480,6 +474,8 @@ struct QRCodeCameraView: UIViewRepresentable {
 }
 
 #Preview {
-    QRScannerView()
-        .modelContainer(for: [HitsterCard.self])
+    NavigationStack {
+        QRScannerView()
+            .modelContainer(for: [Card.self])
+    }
 }

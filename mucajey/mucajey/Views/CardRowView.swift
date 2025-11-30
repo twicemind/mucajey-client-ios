@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct CardRowView: View {
-    let card: HitsterCard
+    let card: Card
     let sortOption: SortOptionFilter
     @State private var isExpanded = false
     @State private var showPlayView = false

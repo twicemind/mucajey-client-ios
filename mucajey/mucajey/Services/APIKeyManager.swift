@@ -7,6 +7,7 @@ class APIKeyManager {
     private let keychainKey = "mucajeyAPIKey"
     private let deviceIdKey = "mucajeyDeviceId"
     private let baseURL = "https://api.mucajey.twicemind.com"
+    private let service = Bundle.main.bundleIdentifier ?? "com.mucajey.app"
     
     private init() {}
     
@@ -35,17 +36,26 @@ class APIKeyManager {
     func getAPIKey() -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: keychainKey,
-            kSecReturnData as String: true,
+            kSecReturnData as String: kCFBooleanTrue as Any,
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
         
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         
-        guard status == errSecSuccess,
-              let data = item as? Data,
-              let apiKey = String(data: data, encoding: .utf8) else {
+        guard status == errSecSuccess else {
+            if status == errSecItemNotFound {
+                print("🔎 Keychain: API-Key nicht gefunden (errSecItemNotFound)")
+            } else {
+                print("❌ Keychain CopyMatching Fehler: \(status)")
+            }
+            return nil
+        }
+        
+        guard let data = item as? Data, let apiKey = String(data: data, encoding: .utf8) else {
+            print("❌ Keychain: Daten konnten nicht gelesen/konvertiert werden")
             return nil
         }
         
@@ -61,12 +71,14 @@ class APIKeyManager {
         
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: keychainKey,
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
         ]
         
         let status = SecItemAdd(query as CFDictionary, nil)
+        if status != errSecSuccess { print("❌ Keychain Add Fehler: \(status)") }
         return status == errSecSuccess
     }
     
@@ -74,9 +86,11 @@ class APIKeyManager {
     private func deleteAPIKey() {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: keychainKey
         ]
         SecItemDelete(query as CFDictionary)
+        // No status returned, consider success if no error thrown
     }
     
     // Registriere App beim Server und hole API-Key
@@ -94,14 +108,14 @@ class APIKeyManager {
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
         
         let registrationData: [String: Any] = [
-            "appName": "TuneQuest iOS",
+            "appName": "mucajey iOS",
             "appVersion": appVersion,
             "deviceId": deviceId,
             "platform": "iOS"
         ]
         
-        guard let url = URL(string: "\(baseURL)/api/register") else {
-            print("❌ Ungültige URL: \(baseURL)/api/register")
+        guard let url = URL(string: "\(baseURL)/register") else {
+            print("❌ Ungültige URL: \(baseURL)/register")
             throw APIKeyError.invalidURL
         }
         
@@ -120,19 +134,38 @@ class APIKeyManager {
         }
         
         print("📡 HTTP \(httpResponse.statusCode)")
-        
+
         guard httpResponse.statusCode == 200 || httpResponse.statusCode == 201 else {
             if let responseString = String(data: data, encoding: .utf8) {
                 print("❌ Server Response: \(responseString)")
             }
             throw APIKeyError.serverError(statusCode: httpResponse.statusCode)
         }
-        
+
+        // Prüfe, ob Body leer ist
+        if data.isEmpty {
+            print("⚠️ Leerer Response-Body trotz Erfolg (\(httpResponse.statusCode))")
+            throw APIKeyError.invalidResponse
+        }
+
+        // Versuche Response zu loggen (zur Diagnose)
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("📝 Response-Body: \(responseString)")
+        }
+
         // Dekodiere Response
         let decoder = JSONDecoder()
-        let registrationResponse = try decoder.decode(APIKeyRegistrationResponse.self, from: data)
+        let registrationResponse: DTOModelsAPI.APIKeyRegistrationResponse
+
+        do {
+            registrationResponse = try decoder.decode(DTOModelsAPI.APIKeyRegistrationResponse.self, from: data)
+        } catch {
+            print("❌ JSON Decode Fehler: \(error.localizedDescription)")
+            throw APIKeyError.invalidResponse
+        }
         
-        print("✅ API-Key vom Server: \(registrationResponse.apiKey.prefix(16))... (Status: \(registrationResponse.status))")
+        let statusText = registrationResponse.status ?? "created"
+        print("✅ API-Key vom Server: \(registrationResponse.apiKey.prefix(16))... (Status: \(statusText))")
         
         // Speichere API-Key
         guard saveAPIKey(registrationResponse.apiKey) else {
@@ -154,37 +187,3 @@ class APIKeyManager {
     }
 }
 
-// Response Model für Registrierung
-struct APIKeyRegistrationResponse: Codable {
-    let message: String
-    let apiKey: String
-    let appName: String
-    let deviceId: String
-    let createdAt: String?
-    let registeredAt: String?
-    let status: String // "new" oder "existing"
-}
-
-// Fehler-Typen
-enum APIKeyError: LocalizedError {
-    case invalidURL
-    case invalidResponse
-    case serverError(statusCode: Int)
-    case keychainError
-    case noAPIKey
-    
-    var errorDescription: String? {
-        switch self {
-        case .invalidURL:
-            return NSLocalizedString("error.apiKey.invalidURL", value: "Ungültige Server-URL", comment: "")
-        case .invalidResponse:
-            return NSLocalizedString("error.apiKey.invalidResponse", value: "Ungültige Server-Antwort", comment: "")
-        case .serverError(let statusCode):
-            return NSLocalizedString("error.apiKey.serverError", value: "Server-Fehler (Code: \(statusCode))", comment: "")
-        case .keychainError:
-            return NSLocalizedString("error.apiKey.keychainError", value: "Fehler beim Speichern des API-Keys", comment: "")
-        case .noAPIKey:
-            return NSLocalizedString("error.apiKey.noAPIKey", value: "Kein API-Key vorhanden", comment: "")
-        }
-    }
-}

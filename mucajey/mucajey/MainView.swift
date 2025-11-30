@@ -8,33 +8,37 @@ struct MainView: View {
     @State private var syncService: DataSyncService?
     @State private var showSyncView = true
     @State private var showDataOverview = false
-    @State private var showQRScanner = false    
     @State private var page = WebPage()
     @State private var query: String = ""
     @SceneStorage("selectedTab") var selectedTab = 0
+    
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab("start.startGame", systemImage: "play.circle.fill", value: 0) {
-                ZStack {
-                    AnimatedMeshGradient()
-                        .ignoresSafeArea(edges: .all)
-                    // Zeige Sync-View beim ersten Start oder wenn Daten aktualisiert werden
-                    if let syncService = syncService {
-                        if showSyncView && (syncService.isSyncing || syncService.syncError != nil) {
-                            SyncView(modelContext: modelContext)
-                                .onReceive(syncService.$hasData) { hasData in
-                                    if hasData && !syncService.isSyncing && syncService.syncError == nil {
-                                        withAnimation {
-                                            showSyncView = false
+                // 👉 NavigationStack ergänzt
+                NavigationStack {
+                    ZStack {
+                        AnimatedMeshGradient()
+                            .ignoresSafeArea(edges: .all)
+                        
+                        if let syncService = syncService {
+                            if showSyncView && (syncService.isCardSyncing || syncService.syncCardError != nil) && (syncService.isEditionSyncing || syncService.syncEditionError != nil) {
+                                SyncView(modelContext: modelContext)
+                                    .onReceive(syncService.$hasCardData) { hasData in
+                                        if hasData && !syncService.isCardSyncing && syncService.syncCardError == nil && !syncService.isEditionSyncing && syncService.syncEditionError == nil {
+                                            withAnimation {
+                                                showSyncView = false
+                                            }
                                         }
                                     }
-                                }
-                        } else {
-                            mainContent
+                            } else {
+                                mainContent
+                            }
                         }
                     }
                 }
             }
+            
             Tab("start.instructions", systemImage: "note", value: 1) {
                 NavigationStack {
                     WebView(page)
@@ -45,27 +49,8 @@ struct MainView: View {
                         .toolbarTitleDisplayMode(.inline)
                 }
             }
-            /* Tab("start.moreHitster", systemImage: "plus.circle.fill") {
-                WebView(page)
-                    .onAppear {
-                        page.load(URLRequest(url: URL(string: "https://hitstergame.com/de-de/produkte/")!))
-                    }
-            }
-            Tab("nav.help", systemImage: "apple.podcasts.pages.fill") {
-                WebView(page)
-                    .onAppear {
-                        page.load(URLRequest(url: URL(string: "https://hitstergame.com/de-de/faq/")!))
-                    }
-            }*/
-            /*Tab("start.instructions", systemImage: "music.note.square.stack", value: 2) {
-                CardListView()
-            }
-            if selectedTab == 2 || selectedTab == 3 {
-                Tab("start.instructions", systemImage: "magnifyingglass", value: 3, role: .search) {
-                    CardListView()
-                }
-            }*/
-            Tab("start.instructions", systemImage: "music.note.square.stack", value: 2) {
+            
+            Tab("start.cards", systemImage: "music.note.square.stack", value: 2) {
                 NavigationStack {
                     EditionList()
                         .background(AnimatedMeshGradient())
@@ -74,7 +59,6 @@ struct MainView: View {
                         .scrollContentBackground(.hidden)
                 }
                 .tabBarMinimizeBehavior(.automatic)
-
             }
         }
         .tabBarMinimizeBehavior(.automatic)
@@ -84,21 +68,23 @@ struct MainView: View {
             }
         }
         .task {
-            // Automatischer Sync beim Start
             if let syncService = syncService {
-                await syncService.syncData()
+                try? await syncService.syncDataCard()
+                try? await syncService.syncDataEdition()
             }
-        }
-        .fullScreenCover(isPresented: $showQRScanner) {
-            QRScannerView()
         }
     }
     
     private var mainContent: some View {
         Group {
-            if let syncService = syncService {
-                // Main content
+            if let _ = syncService {
                 VStack(spacing: 30) {
+                    Image("launchscreen")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: 320)
+                        .shadow(radius: 24)
+                    
                     VStack(spacing: 10) {
                         Text(LocalizedStringKey("start.title"))
                             .font(.system(size: 56, weight: .black, design: .rounded))
@@ -113,11 +99,11 @@ struct MainView: View {
                     }
                     .padding(.bottom, 40)
                     
-                    // Buttons
+                    // 👉 Hier NavigationLink statt Button + fullScreenCover
                     VStack(spacing: 16) {
-                        Button(action: {
-                            showQRScanner = true
-                        }) {
+                        NavigationLink {
+                            QRScannerView()
+                        } label: {
                             Text(LocalizedStringKey("start.startGame"))
                                 .font(.system(size: 22, weight: .bold))
                                 .foregroundColor(.white)
