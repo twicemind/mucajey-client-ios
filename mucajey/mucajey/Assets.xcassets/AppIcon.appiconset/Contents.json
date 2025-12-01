@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "mucajey-iOS-Default-1024x1024@1x.png",
+      "filename" : "mucajey_app_icon.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "mucajey-iOS-Dark-1024x1024@1x.png",
+      "filename" : "mucajey_app_icon 1.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -25,7 +25,7 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "mucajey-iOS-TintedDark-1024x1024@1x.png",
+      "filename" : "mucajey_app_icon 2.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
