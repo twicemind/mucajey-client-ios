@@ -11,6 +11,7 @@ struct MainView: View {
     @State private var page = WebPage()
     @State private var query: String = ""
     @SceneStorage("selectedTab") var selectedTab = 0
+    @State private var searchText = ""
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -50,7 +51,7 @@ struct MainView: View {
                 }
             }
             
-            Tab("start.cards", systemImage: "music.note.square.stack", value: 2) {
+            Tab("start.cards", systemImage: "music.note.square.stack", value: 2, role: .search) {
                 NavigationStack {
                     EditionList()
                         .background(AnimatedMeshGradient())
@@ -61,6 +62,7 @@ struct MainView: View {
                 .tabBarMinimizeBehavior(.automatic)
             }
         }
+        
         .tabBarMinimizeBehavior(.automatic)
         .onAppear {
             if syncService == nil {
@@ -79,25 +81,16 @@ struct MainView: View {
         Group {
             if let _ = syncService {
                 VStack(spacing: 30) {
-                    Image("launchscreen")
+                    Image("mucajey_logo_text2")
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: 320)
                         .shadow(radius: 24)
-                    
-                    VStack(spacing: 10) {
-                        Text(LocalizedStringKey("start.title"))
-                            .font(.system(size: 56, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                            .tracking(2)
-                            .shadow(radius: 16)
-
-                        Text(LocalizedStringKey("start.subtitle"))
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                            .shadow(radius: 16)
-                    }
-                    .padding(.bottom, 40)
+                                
+                    Text(LocalizedStringKey("start.subtitle"))
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.white)
+                        .shadow(radius: 16)
                     
                     // 👉 Hier NavigationLink statt Button + fullScreenCover
                     VStack(spacing: 16) {

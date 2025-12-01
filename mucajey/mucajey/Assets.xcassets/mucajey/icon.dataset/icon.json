@@ -1,11 +1,77 @@
 {
-  "fill" : {
-    "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
-  },
+  "fill-specializations" : [
+    {
+      "value" : {
+        "linear-gradient" : [
+          "extended-srgb:0.00000,0.78431,0.70196,1.00000",
+          "display-p3:0.92092,0.16155,0.19601,1.00000"
+        ],
+        "orientation" : {
+          "start" : {
+            "x" : 0.5,
+            "y" : 0
+          },
+          "stop" : {
+            "x" : 0.5,
+            "y" : 0.7
+          }
+        }
+      }
+    },
+    {
+      "appearance" : "dark",
+      "value" : {
+        "linear-gradient" : [
+          "extended-gray:0.00000,1.00000",
+          "display-p3:0.27661,0.14038,0.58105,1.00000"
+        ],
+        "orientation" : {
+          "start" : {
+            "x" : 0.5,
+            "y" : 0
+          },
+          "stop" : {
+            "x" : 0.5,
+            "y" : 0.7
+          }
+        }
+      }
+    }
+  ],
   "groups" : [
     {
       "layers" : [
         {
+          "blend-mode" : "normal",
+          "glass" : true,
+          "image-name" : "mucaje.png",
+          "name" : "mucaje",
+          "opacity" : 1,
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              13,
+              199.7578125
+            ]
+          }
+        },
+        {
+          "blend-mode" : "normal",
+          "glass" : false,
+          "hidden" : false,
+          "image-name" : "mucajey_logo.png",
+          "name" : "mucajey_logo",
+          "opacity" : 1,
+          "position" : {
+            "scale" : 0.85,
+            "translation-in-points" : [
+              0,
+              -112.765625
+            ]
+          }
+        },
+        {
+          "hidden" : true,
           "image-name" : "C59F6F0E-2E89-4B02-B1A7-69C27EAE9124.png",
           "name" : "C59F6F0E-2E89-4B02-B1A7-69C27EAE9124"
         }

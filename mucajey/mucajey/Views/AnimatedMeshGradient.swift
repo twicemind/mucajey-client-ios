@@ -3,7 +3,6 @@ import SwiftUI
 struct AnimatedMeshGradient: View {
     @State var appear1 = false
     @State var appear2 = false
-    @State var appear3 = false
     
     private let neonPalette: [Color] = [
         Color(red: 1.00, green: 0.00, blue: 0.33), // #FF0054
@@ -22,19 +21,16 @@ struct AnimatedMeshGradient: View {
                 [0.0, 0.0], [appear2 ? 0.5 : 1.0, 0.0], [1.0, 0.0],
                 [0.0, 0.5], appear1 ? [0.1, 0.5] : [0.8, 0.2], [1.0, -0.5],
                 [0.0, 1.0], [1.0, appear2 ? 2.0 : 1.0], [1.0, 1.0],
-                [0.0, 0.0], [appear3 ? 0.5 : 1.0, 0.0], [1.0, 0.0],
+                [0.0, 0.0],
         ], colors: [
             neonPalette[0],
-            appear2 ? neonPalette[3] : neonPalette[1],
-            neonPalette[2],
+            appear2 ? neonPalette[3] : neonPalette[1],neonPalette[2],
             appear1 ? neonPalette[4] : neonPalette[5],
             appear1 ? neonPalette[3] : neonPalette[4],
             appear1 ? neonPalette[5] : neonPalette[6],
             appear1 ? neonPalette[5] : neonPalette[3],
             appear1 ? neonPalette[1] : neonPalette[4],
             appear2 ? neonPalette[5] : neonPalette[6],
-            appear3 ? neonPalette[0] : neonPalette[1],
-            appear3 ? neonPalette[1] : neonPalette[4],
             appear1 ? neonPalette[5] : neonPalette[4]
 
         ])
@@ -51,12 +47,6 @@ struct AnimatedMeshGradient: View {
                 .repeatForever(autoreverses: true))
             {
                 appear2.toggle()
-            }
-            withAnimation(
-                .easeInOut(duration: 5.0)
-                .repeatForever(autoreverses: true))
-            {
-                appear3.toggle()
             }
         }
     }

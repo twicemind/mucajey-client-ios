@@ -11,68 +11,81 @@ struct QRScannerView: View {
     @Query private var allCards: [Card]
     
     private let baseURL = "https://api.mucajey.twicemind.com"
+    @State private var isScanning = false
 
+    // 🔥 Puls-Animation für den Border
+    @State private var isBorderPulsing = false
+    
     var body: some View {
         ZStack {
             // Hintergrund
-            AnimatedMeshGradient()
-                .ignoresSafeArea()
+            AnimatedMeshGradient().ignoresSafeArea()
             
             Color.black.opacity(0.25)
                 .ignoresSafeArea()
             
             VStack {
-                // Scanning Frame inkl. Kamera + Flashlight-Button
-                ZStack {
-                    ZStack(alignment: .bottomTrailing) {
-                        QRCodeCameraView(viewModel: scannerViewModel)
-                            .frame(width: 260, height: 260)
+                ZStack(alignment: .bottomTrailing) {
+                    QRCodeCameraView(viewModel: scannerViewModel)
+                        .frame(width: 260, height: 260)
+                    
+                    // Flashlight-Button in der rechten unteren Ecke *in* der Cam-View
+                    Button(action: {
+                        scannerViewModel.toggleFlashlight()
+                    }) {
+                        Image(systemName: scannerViewModel.isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(14)            // gleichmäßig → Kreis!
+                            .glassEffect(.clear)
+                            .clipShape(Circle())    // macht ihn wirklich rund
+                            .shadow(radius: 8)
+                    }
+                    .padding(10) // Abstand zum Rand – bleibt erhalten
+                }
+                .frame(width: 260, height: 260)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .overlay(
+                    ZStack {
                         
-                        // Flashlight-Button in der rechten unteren Ecke *in* der Cam-View
-                        Button(action: {
-                            scannerViewModel.toggleFlashlight()
-                        }) {
-                            Image(systemName: scannerViewModel.isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(14)            // gleichmäßig → Kreis!
-                                .glassEffect(.clear)
-                                .clipShape(Circle())    // macht ihn wirklich rund
-                                .shadow(radius: 8)
+                        if scannerViewModel.isScanning {
+                            // ✅ Scanner aktiv → nur weißer Puls-Rahmen
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.white, lineWidth: 4)
+                                .shadow(color: .white.opacity(0.9), radius: 12)
+                                .scaleEffect(isBorderPulsing ? 1.04 : 0.98)
+                                .opacity(isBorderPulsing ? 1 : 0.25)
+                                .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true),
+                                           value: isBorderPulsing)
+                        } else {
+                            // ❗ Scanner nicht aktiv → statischer roter Rand
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.red, lineWidth: 4)
+                                .shadow(color: .red.opacity(0.5), radius: 10)
+                                .opacity(0.8)
                         }
-                        .padding(10) // Abstand zum Rand – bleibt erhalten
                     }
-                    .frame(width: 260, height: 260)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(
-                                scannerViewModel.isScanning
-                                ? Color.white
-                                : Color(red: 0.91, green: 0.18, blue: 0.49),
-                                lineWidth: 3
-                            )
-                            .shadow(color: .black.opacity(0.3), radius: 10)
-                    )
-                    .frame(width: 280, height: 280)
-                }
+                )
+                .frame(width: 280, height: 280)
                 
-                // Instructions
-                VStack(spacing: 16) {
-                    if scannerViewModel.isScanning {
-                        HStack(spacing: 8) {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        }
-                        .padding(20)
-                    }
-    
-                    Text("Scannen Sie den QR-Code auf der Rückseite der Karte")
-                        .font(.headline)
+                HStack(spacing: 20) {
+                    Image(systemName: "qrcode.viewfinder")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.85))
+
+                    Text("Scanne den QR-Code...")
+                        .font(.system(size: 21, weight: .semibold, design: .rounded))
                         .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
+                        .shadow(color: .pink.opacity(0.3), radius: 4)
+                        .shadow(color: .cyan.opacity(0.25), radius: 6)
                 }
-                .padding(.bottom, 60)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .background(
+                    .ultraThinMaterial.opacity(0.65),
+                    in: Capsule()
+                )
+                .shadow(radius: 12, y: 6)
             }
             
             // Error Message
@@ -95,6 +108,8 @@ struct QRScannerView: View {
         }
         .onAppear {
             scannerViewModel.startScanning()
+            // Puls starten
+            isBorderPulsing = true
         }
         .onDisappear {
             scannerViewModel.stopScanning()
@@ -103,6 +118,10 @@ struct QRScannerView: View {
             if let url = newValue {
                 processScannedURL(url)
             }
+        }
+        // Puls nur laufen lassen, wenn wirklich gescannt wird (optional)
+        .onChange(of: scannerViewModel.isScanning) { _, newValue in
+            isBorderPulsing = newValue
         }
         // 👇 ersetzt das alte onDismiss aus fullScreenCover
         .onChange(of: showPlayView) { _, isShowing in
@@ -470,6 +489,23 @@ struct QRCodeCameraView: UIViewRepresentable {
         if let previewLayer = uiView.layer.sublayers?.first as? AVCaptureVideoPreviewLayer {
             previewLayer.frame = uiView.bounds
         }
+    }
+}
+
+struct AnimatedGradientBorder: View {
+    @State private var animate = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 32)
+            .trim(from: 0, to: 1)
+            .stroke(
+                AngularGradient(colors: [.pink, .orange, .yellow, .green, .cyan, .purple, .pink],
+                                center: .center,
+                                angle: .degrees(animate ? 360 : 0)),
+                style: StrokeStyle(lineWidth: 5, lineCap: .round)
+            )
+            .animation(.linear(duration: 6).repeatForever(autoreverses: false), value: animate)
+            .onAppear { animate = true }
     }
 }
 
